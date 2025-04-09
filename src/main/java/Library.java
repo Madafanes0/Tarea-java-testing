@@ -2,12 +2,16 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;  
 import java.util.HashMap;  
-import java.util.List; 
-  
+import java.util.List;  
+import java.util.Map;
+
 public class Library {  
-    private List<Book> books;  
-    private List<Patron> patrons;  
-    private HashMap<Patron, Book> checkedOutBooks;  
+    private final List<Book> books;  
+    private final List<Patron> patrons;  
+    private final Map<Book, Patron> checkedOutBooks;  
+    private final Object booksLock = new Object();  
+    private final Object patronsLock = new Object();  
+    private final Object checkedOutBooksLock = new Object();
   
     public Library() {  
         this.books = new ArrayList<>();  
@@ -16,66 +20,119 @@ public class Library {
     }  
   
     public void addBook(Book book) {  
-        if (!books.contains(book)) {  
-            books.add(book);  
+        synchronized (booksLock) {  
+            if (!books.contains(book)) {  
+                books.add(book);  
+            }  
         }  
     }  
   
     public void removeBook(Book book) {  
-        books.remove(book);  
+        synchronized (booksLock) {  
+            books.remove(book);  
+        }  
     }  
   
     public void addPatron(Patron patron) {  
-        if (!patrons.contains(patron)) {  
-            patrons.add(patron);  
+        synchronized (patronsLock) {  
+            if (!patrons.contains(patron)) {  
+                patrons.add(patron);  
+            }  
         }  
     }  
   
     public void removePatron(Patron patron) {  
-        patrons.remove(patron);  
+        synchronized (patronsLock) {  
+            patrons.remove(patron);  
+        }  
     }  
   
-    public boolean checkOutBook(Patron patron, Book book, int daysToDue) {  
-        if (books.contains(book) && !book.isCheckedOut() && patrons.contains(patron)) {  
-            book.checkOut(daysToDue);  
+    public boolean checkOutBook(Patron patron, Book book, int days) {  
+        synchronized (checkedOutBooksLock) {  
+            if (!patrons.contains(patron)) {  
+                return false;  
+            }  
+            if (!books.contains(book)) {  
+                return false;  
+            }  
+            if (checkedOutBooks.containsKey(book)) {  
+                return false;  
+            }  
+            if (book.isCheckedOut()) {  
+                return false;  
+            }  
+            
+            book.checkOut(days);  
             patron.checkOutBook(book);  
-            checkedOutBooks.put(patron, book);  
+            checkedOutBooks.put(book, patron);  
             return true;  
         }  
-        return false;  
     }  
   
     public boolean returnBook(Patron patron) {  
-        Book book = checkedOutBooks.get(patron);  
-        if (book != null) {  
+        synchronized (checkedOutBooksLock) {  
+            List<Book> patronBooks = patron.getCheckedOutBooks();  
+            if (patronBooks.isEmpty()) {  
+                return false;  
+            }  
+            
+            Book book = patronBooks.get(0);
             book.returnBook();  
             patron.returnBook(book);  
-            checkedOutBooks.remove(patron);  
+            checkedOutBooks.remove(book);  
             return true;  
         }  
-        return false;  
     }  
   
     public double calculateFine(Patron patron) {  
-        Book book = checkedOutBooks.get(patron);  
-        if (book != null && book.isOverdue()) {  
-            long daysOverdue = (System.currentTimeMillis() - book.getDueDate()) / (24 * 60 * 60 * 1000);  
-            return daysOverdue * 0.5; // $0.50 per day  
-        }  
-        return 0.0;  
-    }  
-  
-    public List<Book> listAvailableBooks() {  
-        List<Book> availableBooks = new ArrayList<>();  
-        for (Book book : books) {  
-            if (!book.isCheckedOut()) {  
-                availableBooks.add(book);  
+        synchronized (checkedOutBooksLock) {  
+            List<Book> patronBooks = patron.getCheckedOutBooks();  
+            if (patronBooks.isEmpty()) {  
+                return 0.0;  
             }  
+            
+            Book book = patronBooks.get(0);  
+            if (checkedOutBooks.containsKey(book) && book.isOverdue()) {  
+                long daysOverdue = (System.currentTimeMillis() - book.getDueDate()) / (24 * 60 * 60 * 1000);  
+                return Math.max(0, daysOverdue * 0.50);  
+            }  
+            return 0.0;  
         }  
-        return availableBooks;  
     }  
   
-    public List<Patron> listPatrons() {  
-        return new ArrayList<>(patrons);  
+    public List<Book> getBooks() {  
+        synchronized (booksLock) {  
+            return new ArrayList<>(books);  
+        }  
     }  
+  
+    public List<Patron> getPatrons() {  
+        synchronized (patronsLock) {  
+            return new ArrayList<>(patrons);  
+        }  
+    }  
+  
+    public Map<Book, Patron> getCheckedOutBooks() {  
+        synchronized (checkedOutBooksLock) {  
+            return new HashMap<>(checkedOutBooks);  
+        }  
+    }  
+
+    public List<Book> listAvailableBooks() {
+        synchronized (booksLock) {
+            List<Book> availableBooks = new ArrayList<>();
+            for (Book book : books) {
+                if (!book.isCheckedOut()) {
+                    availableBooks.add(book);
+                }
+            }
+            return availableBooks;
+        }
+    }
+
+    public List<Patron> listPatrons() {
+        synchronized (patronsLock) {
+            return new ArrayList<>(patrons);
+        }
+    }
 }  

@@ -1,113 +1,84 @@
-# Library Management System with Unit Testing
+# Library Management System
 
-Este proyecto implementa un sistema de gestión de biblioteca con pruebas unitarias utilizando JUnit 4.
+A Java-based library management system that supports concurrent access by multiple patrons.
 
-## Estructura del Proyecto
+## Features
 
+- Book management (add, remove, check availability)
+- Patron management (add, remove)
+- Book checkout and return operations
+- Fine calculation for overdue books
+- Thread-safe operations for concurrent access
+- Comprehensive unit testing
+
+## Thread Safety
+
+The library system is designed to handle concurrent access by multiple patrons. Key features include:
+
+- Synchronized access to shared resources (books, patrons, and checkout records)
+- Thread-safe book checkout and return operations
+- Consistent state management under heavy concurrent load
+
+The system uses fine-grained locking to ensure thread safety while maintaining good performance. Each major resource (books, patrons, and checkout records) has its own lock, allowing for better concurrency than a single global lock.
+
+## Testing
+
+The system includes comprehensive unit tests, including:
+
+- Basic functionality tests
+- Thread safety tests
+- Concurrent operation tests
+
+To run the tests:
+
+```bash
+mvn test
 ```
-LibraryManagementUnitTesting/
-├── src/
-│   ├── main/
-│   │   └── java/
-│   │       ├── Book.java
-│   │       ├── Library.java
-│   │       └── Patron.java
-│   └── test/
-│       └── java/
-│           └── LibraryTest.java
-├── pom.xml
-└── README.md
+
+## Dependencies
+
+- JUnit 4.13.2
+- Maven
+
+## Building
+
+```bash
+mvn clean install
 ```
 
-## Requisitos Previos
-
-- Java JDK 11 o superior
-- Maven 3.6 o superior
-- Git (opcional, para clonar el repositorio)
-
-## Instrucciones para Ejecutar
-
-1. **Clonar el Repositorio** (opcional):
-   ```bash
-   git clone https://github.com/Madafanes0/Tarea-java-testing.git
-   cd Tarea-java-testing
-   ```
-
-2. **Compilar el Proyecto**:
-   ```bash
-   mvn clean compile
-   ```
-
-3. **Ejecutar los Tests**:
-   ```bash
-   mvn test
-   ```
-
-## Descripción de las Clases
-
-### Book.java
-Representa un libro en la biblioteca con atributos como título, autor y estado de préstamo.
-
-### Library.java
-Implementa la lógica principal de la biblioteca, incluyendo:
-- Agregar/remover libros
-- Registrar/remover usuarios
-- Prestar libros
-- Devolver libros
-- Calcular multas
-
-### Patron.java
-Representa un usuario de la biblioteca con su lista de libros prestados.
-
-## Tests Implementados
-
-Los tests cubren las siguientes funcionalidades:
-- Agregar libros a la biblioteca
-- Prestar libros a usuarios
-- Devolver libros
-- Calcular multas por retraso
-- Manejo de múltiples usuarios
-- Casos de error (libros inexistentes, etc.)
-
-## Ejemplo de Uso
+## Usage
 
 ```java
-// Crear una biblioteca
+// Create a library
 Library library = new Library();
 
-// Crear libros
-Book book1 = new Book("Harry Potter", "J.K. Rowling");
-Book book2 = new Book("El Señor de los Anillos", "J.R.R. Tolkien");
+// Add books
+Book book = new Book("The Great Gatsby", "F. Scott Fitzgerald");
+library.addBook(book);
 
-// Crear usuarios
-Patron patron1 = new Patron("Juan Pérez");
-Patron patron2 = new Patron("María García");
+// Add patrons
+Patron patron = new Patron("John Doe");
+library.addPatron(patron);
 
-// Agregar libros a la biblioteca
-library.addBook(book1);
-library.addBook(book2);
+// Check out a book
+library.checkOutBook(patron, book, 14); // 14 days loan period
 
-// Registrar usuarios
-library.addPatron(patron1);
-library.addPatron(patron2);
+// Return a book
+library.returnBook(patron);
 
-// Prestar un libro
-library.checkOutBook(patron1, book1, 7); // 7 días de préstamo
-
-// Devolver un libro
-library.returnBook(patron1);
-
-// Calcular multa (si hay retraso)
-double fine = library.calculateFine(patron1);
+// Calculate fines
+double fine = library.calculateFine(patron);
 ```
 
-## Contribuciones
+## Thread Safety Considerations
 
-Las contribuciones son bienvenidas. Por favor, asegúrate de:
-1. Seguir el estilo de código existente
-2. Incluir pruebas unitarias para nuevas funcionalidades
-3. Actualizar la documentación según sea necesario
+When using the library system in a multithreaded environment:
 
-## Licencia
+1. The system automatically handles concurrent access to shared resources
+2. Book checkout and return operations are atomic
+3. The system maintains consistency even under heavy concurrent load
+4. Fine-grained locking ensures good performance with multiple concurrent users
 
-Este proyecto está bajo la Licencia MIT. Ver el archivo LICENSE para más detalles.
+## License
+
+MIT License
